@@ -28,6 +28,11 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   const [services, setServices] = useState<Service[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const stats = [
+    { id: "doctors", value: "50+", label: "Specialist doctors" },
+    { id: "emergency", value: "24/7", label: "Emergency care" },
+    { id: "satisfaction", value: "98%", label: "Patient satisfaction" },
+  ] as const;
 
   useEffect(() => {
     void servicesService.list().then(setServices);
@@ -63,14 +68,10 @@ function HomePage() {
               </Button>
             </div>
             <dl className="grid grid-cols-3 gap-6 border-t border-border/60 pt-6">
-              {[
-                ["50+", "Specialist doctors"],
-                ["24/7", "Emergency care"],
-                ["98%", "Patient satisfaction"],
-              ].map(([k, v]) => (
-                <div key={v}>
-                  <dt className="font-display text-2xl font-bold text-foreground">{k}</dt>
-                  <dd className="text-xs text-muted-foreground">{v}</dd>
+              {stats.map((stat) => (
+                <div key={stat.id}>
+                  <dt className="font-display text-2xl font-bold text-foreground">{stat.value}</dt>
+                  <dd className="text-xs text-muted-foreground">{stat.label}</dd>
                 </div>
               ))}
             </dl>

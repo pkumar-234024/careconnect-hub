@@ -1,9 +1,17 @@
-import { doctors } from "@/data/doctors";
+import { doctors as fallbackDoctors } from "@/data/doctors";
 import type { Doctor } from "@/types";
-import { mockFetch } from "./api/client";
+import { apiRequest } from "./api/client";
 
 export const doctorsService = {
-  list: (): Promise<Doctor[]> => mockFetch(doctors),
-  getById: (id: string): Promise<Doctor | undefined> =>
-    mockFetch(doctors.find((d) => d.id === id)),
+  list: async (): Promise<Doctor[]> => {
+    try {
+      return await apiRequest<Doctor[]>("/doctors");
+    } catch {
+      return fallbackDoctors;
+    }
+  },
+  getById: async (id: string): Promise<Doctor | undefined> => {
+    const doctors = await doctorsService.list();
+    return doctors.find((doctor) => doctor.userId === id);
+  },
 };
