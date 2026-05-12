@@ -1,8 +1,15 @@
+export interface Hospital {
+  id: string;
+  name: string;
+  code: string;
+}
+
 export interface Doctor {
   userId: string;
   fullName: string;
   email: string;
   phoneNumber: string;
+  hospitalId?: string | null;
 }
 
 export interface Service {
@@ -21,6 +28,7 @@ export interface Testimonial {
 }
 
 export interface AppointmentRequest {
+  hospitalId: string;
   patientName: string;
   patientEmail: string;
   patientPhoneNumber: string;
@@ -34,6 +42,7 @@ export type AppointmentStatus = "Pending" | "Approved" | "Declined" | "Cancelled
 export interface AppointmentRecord extends AppointmentRequest {
   id: string;
   doctorName: string;
+  hospitalName: string;
   status: AppointmentStatus;
   reviewedByUserId: string | null;
   reviewedAt: string | null;
@@ -57,6 +66,8 @@ export interface UserDto {
   email: string;
   phoneNumber: string;
   profilePicture: string;
+  hospitalId: string | null;
+  hospitalName: string;
   createdAt: string;
 }
 
@@ -76,6 +87,8 @@ export interface AuthStatusResponse {
   isAuthenticated: boolean;
   userId: string;
   email: string;
+  hospitalId: string | null;
+  hospitalName: string;
   roles: string[];
   emailVerified: boolean;
   isAccountLocked: boolean;

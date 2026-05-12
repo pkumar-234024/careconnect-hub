@@ -1,6 +1,9 @@
 import { Mail, Phone, Stethoscope } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { hospitals } from "@/data/hospitals";
 import type { Doctor } from "@/types";
+
+const hospitalById = new Map(hospitals.map((hospital) => [hospital.id, hospital]));
 
 function getInitials(name: string) {
   return name
@@ -12,6 +15,8 @@ function getInitials(name: string) {
 }
 
 export function DoctorCard({ doctor }: { doctor: Doctor }) {
+  const hospitalName = doctor.hospitalId ? hospitalById.get(doctor.hospitalId)?.name : undefined;
+
   return (
     <Card className="group overflow-hidden border-border/70 bg-card transition-all hover:-translate-y-1 hover:shadow-elevated">
       <div className="bg-gradient-to-br from-primary/15 via-primary-soft to-accent/20 p-6">
@@ -29,6 +34,9 @@ export function DoctorCard({ doctor }: { doctor: Doctor }) {
             Clinical care team
           </p>
           <h3 className="font-display text-xl font-semibold">{doctor.fullName}</h3>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {hospitalName ? hospitalName : "Hospital assigned"}
+          </p>
         </div>
       </div>
 
