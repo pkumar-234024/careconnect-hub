@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck2, Clock3, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,8 @@ import {
 import { ApiError } from "@/services/api/client";
 import { appointmentService } from "@/services/appointmentService";
 import { doctorsService } from "@/services/doctorsService";
-import type { AppointmentRequest, Doctor } from "@/types";
+import { hospitalService } from "@/services/hospitalService";
+import type { AppointmentRequest, Doctor, Hospital } from "@/types";
 
 export const Route = createFileRoute("/appointment")({
   head: () => ({
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/appointment")({
 });
 
 const initialForm: AppointmentRequest = {
+  hospitalId: "",
   patientName: "",
   patientEmail: "",
   patientPhoneNumber: "",
@@ -45,16 +47,88 @@ const initialForm: AppointmentRequest = {
 };
 
 function AppointmentPage() {
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [hospitalLoading, setHospitalLoading] = useState(true);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<AppointmentRequest>(initialForm);
 
+  const selectedHospital = useMemo(
+    () => hospitals.find((hospital) => hospital.id === form.hospitalId),
+    [hospitals, form.hospitalId],
+  );
+
   useEffect(() => {
-    void doctorsService.list().then(setDoctors);
+    let active = true;
+
+    async function loadHospitals() {
+      setHospitalLoading(true);
+      try {
+        const list = await hospitalService.list();
+        if (!active) return;
+
+        setHospitals(list);
+        setForm((current) => ({
+          ...current,
+          hospitalId: current.hospitalId || list[0]?.id || "",
+        }));
+      } catch {
+        if (active) {
+          toast.error("Could not load hospitals right now.");
+        }
+      } finally {
+        if (active) setHospitalLoading(false);
+      }
+    }
+
+    void loadHospitals();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDoctors() {
+      if (!form.hospitalId) {
+        setDoctors([]);
+        return;
+      }
+
+      setDoctorsLoading(true);
+      try {
+        const list = await doctorsService.list(form.hospitalId);
+        if (active) {
+          setDoctors(list);
+        }
+      } finally {
+        if (active) setDoctorsLoading(false);
+      }
+    }
+
+    void loadDoctors();
+
+    return () => {
+      active = false;
+    };
+  }, [form.hospitalId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!form.hospitalId) {
+      toast.error("Please choose a hospital before booking.");
+      return;
+    }
+
+    if (!form.doctorUserId) {
+      toast.error("Please choose a doctor before booking.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -64,7 +138,10 @@ function AppointmentPage() {
       });
 
       toast.success("Appointment request sent. Staff will review it shortly.");
-      setForm(initialForm);
+      setForm({
+        ...initialForm,
+        hospitalId: form.hospitalId,
+      });
     } catch (error) {
       if (error instanceof ApiError) {
         toast.error(error.message);
@@ -85,12 +162,12 @@ function AppointmentPage() {
               Appointments
             </span>
             <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Book your visit and let staff confirm the slot.
+              Book your visit by choosing the right hospital first.
             </h1>
             <p className="max-w-2xl text-balance text-lg text-muted-foreground">
-              Choose a doctor, pick a date and time, and send your request directly to the hospital
-              backend. Admins, doctors and receptionists can approve or decline from the staff
-              dashboard.
+              Pick a hospital, choose a doctor from that location, and send your request directly
+              to the backend. Admins, doctors and receptionists can approve or decline it from the
+              staff dashboard.
             </p>
 
             <div className="grid gap-4 sm:grid-cols-3">
@@ -128,8 +205,44 @@ function AppointmentPage() {
                 </div>
               </div>
 
+              {selectedHospital ? (
+                <div className="rounded-2xl border border-border/70 bg-primary-soft/40 px-4 py-3 text-sm">
+                  Booking for <span className="font-medium text-foreground">{selectedHospital.name}</span>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border/70 px-4 py-3 text-sm text-muted-foreground">
+                  {hospitalLoading ? "Loading hospitals..." : "Choose a hospital to load its doctors."}
+                </div>
+              )}
+
               <form className="space-y-5" onSubmit={handleSubmit}>
                 <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Hospital</Label>
+                    <Select
+                      value={form.hospitalId}
+                      onValueChange={(value) =>
+                        setForm({
+                          ...form,
+                          hospitalId: value,
+                          doctorUserId: "",
+                        })
+                      }
+                      disabled={hospitalLoading || hospitals.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a hospital" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hospitals.map((hospital) => (
+                          <SelectItem key={hospital.id} value={hospital.id}>
+                            {hospital.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="patientName">Patient name</Label>
                     <Input
@@ -176,6 +289,7 @@ function AppointmentPage() {
                     <Select
                       value={form.doctorUserId}
                       onValueChange={(value) => setForm({ ...form, doctorUserId: value })}
+                      disabled={!form.hospitalId || doctorsLoading}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a doctor" />
@@ -188,6 +302,13 @@ function AppointmentPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {doctorsLoading
+                        ? "Loading doctors for the selected hospital..."
+                        : form.hospitalId
+                          ? `${doctors.length} doctor(s) available at this hospital.`
+                          : "Pick a hospital to see available doctors."}
+                    </p>
                   </div>
                 </div>
 
@@ -207,7 +328,11 @@ function AppointmentPage() {
                   <p className="text-xs text-muted-foreground">
                     Your request will appear in the staff dashboard as pending until reviewed.
                   </p>
-                  <Button type="submit" size="lg" disabled={loading}>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={loading || hospitalLoading || !form.hospitalId || !form.doctorUserId}
+                  >
                     {loading ? "Submitting..." : "Request appointment"}
                   </Button>
                 </div>

@@ -80,7 +80,7 @@ function AdminPage() {
 
         setAuth(session);
         if (session.isAuthenticated) {
-          await loadDashboard();
+          await loadDashboard(session.hospitalId);
         }
       } catch {
         if (active) {
@@ -91,12 +91,12 @@ function AdminPage() {
       }
     }
 
-    async function loadDashboard() {
+    async function loadDashboard(hospitalId?: string | null) {
       setAppointmentsLoading(true);
       try {
         const [appointmentPage, doctorList] = await Promise.all([
           appointmentService.list(1, 100),
-          doctorsService.list(),
+          doctorsService.list(hospitalId ?? undefined),
         ]);
 
         if (!active) return;
@@ -131,12 +131,12 @@ function AdminPage() {
 
   const isStaff = auth?.roles?.some((role) => staffRoles.has(role)) ?? false;
 
-  async function refreshAppointments() {
+  async function refreshAppointments(hospitalId?: string | null) {
     setAppointmentsLoading(true);
     try {
       const [appointmentPage, doctorList] = await Promise.all([
         appointmentService.list(1, 100),
-        doctorsService.list(),
+        doctorsService.list(hospitalId ?? undefined),
       ]);
 
       setAppointments(appointmentPage.items);
@@ -160,7 +160,7 @@ function AdminPage() {
 
       const session = await authService.status();
       setAuth(session);
-      await refreshAppointments();
+      await refreshAppointments(session.hospitalId);
       toast.success("Signed in successfully.");
     } catch (error) {
       if (error instanceof ApiError) {
@@ -341,6 +341,10 @@ function AdminPage() {
                 Review incoming requests from the public site, then approve or decline them for
                 the care team.
               </p>
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                {auth?.hospitalName ? `Scoped to ${auth.hospitalName}` : "Platform-wide access"}
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -416,6 +420,7 @@ function AdminPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Hospital</TableHead>
                     <TableHead>Patient</TableHead>
                     <TableHead>Doctor</TableHead>
                     <TableHead>Schedule</TableHead>
@@ -429,6 +434,11 @@ function AdminPage() {
 
                     return (
                       <TableRow key={appointment.id}>
+                        <TableCell className="min-w-44">
+                          <div className="font-medium">
+                            {appointment.hospitalName || auth?.hospitalName || "Unknown hospital"}
+                          </div>
+                        </TableCell>
                         <TableCell className="min-w-52">
                           <div className="font-medium">{appointment.patientName}</div>
                           <div className="text-xs text-muted-foreground">{appointment.patientEmail}</div>

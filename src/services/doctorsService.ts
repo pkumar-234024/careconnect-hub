@@ -3,11 +3,18 @@ import type { Doctor } from "@/types";
 import { apiRequest } from "./api/client";
 
 export const doctorsService = {
-  list: async (): Promise<Doctor[]> => {
+  list: async (hospitalId?: string): Promise<Doctor[]> => {
     try {
-      return await apiRequest<Doctor[]>("/doctors");
+      const params = new URLSearchParams();
+      if (hospitalId) {
+        params.set("hospitalId", hospitalId);
+      }
+      const path = params.toString() ? `/doctors?${params.toString()}` : "/doctors";
+      return await apiRequest<Doctor[]>(path);
     } catch {
-      return fallbackDoctors;
+      return hospitalId
+        ? fallbackDoctors.filter((doctor) => doctor.hospitalId === hospitalId)
+        : fallbackDoctors;
     }
   },
   getById: async (id: string): Promise<Doctor | undefined> => {

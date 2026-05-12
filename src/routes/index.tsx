@@ -141,7 +141,7 @@ function HomePage() {
           />
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {doctors.map((d) => (
-              <DoctorCard key={d.id} doctor={d} />
+              <DoctorCard key={d.userId} doctor={d} />
             ))}
           </div>
           <div className="mt-10 text-center">
