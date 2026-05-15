@@ -44,6 +44,12 @@ export const Route = createRootRoute({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Meridian Health — Compassionate, Modern Medical Care" },
+      { name: "description", content: "CareConnect Hub is a modern, responsive hospital website built with React and TypeScript." },
+      { property: "og:description", content: "CareConnect Hub is a modern, responsive hospital website built with React and TypeScript." },
+      { name: "twitter:description", content: "CareConnect Hub is a modern, responsive hospital website built with React and TypeScript." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0371df2d-9951-4789-8c47-79a31efd7335/id-preview-75287b9e--194377e2-c7ba-4f2e-bef0-cbae4fc914c2.lovable.app-1778828187949.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0371df2d-9951-4789-8c47-79a31efd7335/id-preview-75287b9e--194377e2-c7ba-4f2e-bef0-cbae4fc914c2.lovable.app-1778828187949.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
